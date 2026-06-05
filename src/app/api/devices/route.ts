@@ -28,17 +28,18 @@ export async function GET() {
 
     await connectToDatabase();
 
-    // Retrieve all registered devices in the system for this user's email, sorted by lastActive descending
-    const allDevices = await Device.find({ email: decoded.email.toLowerCase() })
+    // Retrieve all registered devices in the system, sorted by lastActive descending
+    const allDevices = await Device.find({})
       .sort({ lastActive: -1 })
       .select("deviceId deviceName email lastActive -_id");
 
     // Filter duplicates and delete stale records in the background
     const uniqueDevices: any[] = [];
-    const seenNames = new Set();
+    const seenKeys = new Set();
     for (const dev of allDevices) {
-      if (!seenNames.has(dev.deviceName)) {
-        seenNames.add(dev.deviceName);
+      const key = `${dev.email.toLowerCase()}|${dev.deviceName.toLowerCase()}`;
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key);
         uniqueDevices.push(dev);
       } else {
         // Delete stale duplicate in the background
