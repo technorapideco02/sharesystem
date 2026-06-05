@@ -475,6 +475,10 @@ html, body {
   background: var(--brand-plum-bg);
 }
 
+.dropzone * {
+  pointer-events: none;
+}
+
 .dropzone-icon {
   font-size: 2.2rem;
   color: var(--brand-plum-light);

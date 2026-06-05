@@ -13,23 +13,39 @@ export async function POST(req: Request) {
 
     await connectToDatabase();
 
-    // 1. Update heartbeat timestamp for this device
+    // 1. Update heartbeat timestamp for this device by email and deviceName to prevent duplicates
     await Device.findOneAndUpdate(
-      { deviceId },
+      { email: email.toLowerCase(), deviceName },
       {
-        email: email.toLowerCase(),
-        deviceName,
+        deviceId,
         lastActive: new Date(),
       },
       { upsert: true }
     );
 
-    // 2. Fetch all registered devices
-    const allDevices = await Device.find({}).select("deviceId deviceName email lastActive -_id");
+    // 2. Fetch all registered devices for this user's email, sorted by lastActive descending
+    const allDevices = await Device.find({ email: email.toLowerCase() })
+      .sort({ lastActive: -1 })
+      .select("deviceId deviceName email lastActive -_id");
+
+    // Filter duplicates and delete stale records in the background
+    const uniqueDevices: any[] = [];
+    const seenNames = new Set();
+    for (const dev of allDevices) {
+      if (!seenNames.has(dev.deviceName)) {
+        seenNames.add(dev.deviceName);
+        uniqueDevices.push(dev);
+      } else {
+        // Delete stale duplicate in the background
+        Device.deleteOne({ deviceId: dev.deviceId }).catch((err) =>
+          console.error("Error deleting stale duplicate:", err)
+        );
+      }
+    }
 
     // 3. Map devices with online status (online if active in the last 15 seconds)
     const now = Date.now();
-    const mappedDevices = allDevices.map((dev: any) => {
+    const mappedDevices = uniqueDevices.map((dev: any) => {
       const lastActiveTime = new Date(dev.lastActive).getTime();
       const isOnline = now - lastActiveTime < 15000; // 15 seconds threshold
       return {

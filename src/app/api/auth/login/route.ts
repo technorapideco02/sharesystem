@@ -44,12 +44,11 @@ export async function POST(req: Request) {
       );
     }
 
-    // Register or update device association
+    // Register or update device association by email and deviceName to prevent duplicates
     await Device.findOneAndUpdate(
-      { deviceId },
+      { email: email.toLowerCase(), deviceName },
       {
-        email: email.toLowerCase(),
-        deviceName,
+        deviceId,
         lastActive: new Date(),
       },
       { upsert: true, new: true }

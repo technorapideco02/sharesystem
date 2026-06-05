@@ -28,12 +28,27 @@ export async function GET() {
 
     await connectToDatabase();
 
-    // Retrieve all registered devices in the system
-    const devices = await Device.find({}).select(
-      "deviceId deviceName email lastActive -_id"
-    );
+    // Retrieve all registered devices in the system for this user's email, sorted by lastActive descending
+    const allDevices = await Device.find({ email: decoded.email.toLowerCase() })
+      .sort({ lastActive: -1 })
+      .select("deviceId deviceName email lastActive -_id");
 
-    return NextResponse.json({ devices }, { status: 200 });
+    // Filter duplicates and delete stale records in the background
+    const uniqueDevices: any[] = [];
+    const seenNames = new Set();
+    for (const dev of allDevices) {
+      if (!seenNames.has(dev.deviceName)) {
+        seenNames.add(dev.deviceName);
+        uniqueDevices.push(dev);
+      } else {
+        // Delete stale duplicate in the background
+        Device.deleteOne({ deviceId: dev.deviceId }).catch((err) =>
+          console.error("Error deleting stale duplicate:", err)
+        );
+      }
+    }
+
+    return NextResponse.json({ devices: uniqueDevices }, { status: 200 });
   } catch (error: any) {
     console.error("Fetch devices error:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

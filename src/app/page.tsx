@@ -138,6 +138,7 @@ export default function Home() {
   const receivedChunksRef = useRef<ArrayBuffer[]>([]);
   const receivedBytesRef = useRef<number>(0);
   const incomingRequestRef = useRef<{ senderDeviceId: string; fileName: string; fileSize: number; fileType: string } | null>(null);
+  const iceCandidatesQueueRef = useRef<RTCIceCandidateInit[]>([]);
 
   // 1. Detect Device & LocalStorage UUID
   useEffect(() => {
@@ -207,6 +208,10 @@ export default function Home() {
       if (res.ok) {
         const data = await res.json();
         setUser(data.user);
+        if (data.user && data.user.deviceId) {
+          setDeviceId(data.user.deviceId);
+          localStorage.setItem("sharesystem_device_id", data.user.deviceId);
+        }
         setToken(data.token);
         setUiState("DASHBOARD");
       } else {
@@ -266,6 +271,10 @@ export default function Home() {
       if (res.ok) {
         showToast("Email verified and device registered!");
         setUser(data.device ? { email: data.user.email, deviceId: data.device.deviceId, deviceName: data.device.deviceName } : null);
+        if (data.device && data.device.deviceId) {
+          setDeviceId(data.device.deviceId);
+          localStorage.setItem("sharesystem_device_id", data.device.deviceId);
+        }
         setToken(data.token);
         setUiState("DASHBOARD");
       } else {
@@ -300,6 +309,10 @@ export default function Home() {
       if (res.ok) {
         showToast("Logged in successfully!");
         setUser({ email: data.user.email, deviceId: data.device.deviceId, deviceName: data.device.deviceName });
+        if (data.device && data.device.deviceId) {
+          setDeviceId(data.device.deviceId);
+          localStorage.setItem("sharesystem_device_id", data.device.deviceId);
+        }
         setToken(data.token);
         setUiState("DASHBOARD");
       } else {
@@ -362,8 +375,8 @@ export default function Home() {
         // Update registered devices in sidebar
         if (data.devices) {
           setAllDevices(data.devices);
-          // Set active online devices list
-          const activeOnline = data.devices.filter((d: any) => d.isOnline);
+          // Set active online devices list (excluding this device)
+          const activeOnline = data.devices.filter((d: any) => d.isOnline && d.deviceId !== (user?.deviceId || deviceId));
           setOnlineDevices(activeOnline);
         }
 
@@ -432,17 +445,33 @@ export default function Home() {
       case "webrtc-answer":
         console.log("[Client] Received WebRTC answer, finalizing...");
         if (peerConnectionRef.current) {
-          await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+          try {
+            await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+            await drainIceCandidatesQueue();
+          } catch (e) {
+            console.error("[Client] Error setting remote description:", e);
+          }
         }
         break;
 
       case "ice-candidate":
         console.log("[Client] Received ICE candidate");
-        if (peerConnectionRef.current && payload.candidate) {
-          try {
-            await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(payload.candidate));
-          } catch (e) {
-            console.error("[Client] Error adding ICE candidate:", e);
+        if (payload.candidate) {
+          const pc = peerConnectionRef.current;
+          if (pc) {
+            if (pc.remoteDescription && pc.remoteDescription.type) {
+              try {
+                await pc.addIceCandidate(new RTCIceCandidate(payload.candidate));
+              } catch (e) {
+                console.error("[Client] Error adding ICE candidate:", e);
+              }
+            } else {
+              console.log("[Client] Remote description not set yet, queuing candidate");
+              iceCandidatesQueueRef.current.push(payload.candidate);
+            }
+          } else {
+            console.log("[Client] Connection not initialized, queuing candidate");
+            iceCandidatesQueueRef.current.push(payload.candidate);
           }
         }
         break;
@@ -480,6 +509,24 @@ export default function Home() {
 
   // 3. P2P WebRTC Transfer Handlers
 
+  // Drain queued ICE Candidates after Remote Description is set
+  const drainIceCandidatesQueue = async () => {
+    const pc = peerConnectionRef.current;
+    if (!pc || !pc.remoteDescription) return;
+
+    console.log(`[Client] Draining ${iceCandidatesQueueRef.current.length} queued ICE candidates`);
+    const candidates = [...iceCandidatesQueueRef.current];
+    iceCandidatesQueueRef.current = [];
+
+    for (const candidate of candidates) {
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (e) {
+        console.error("[Client] Error adding queued ICE candidate:", e);
+      }
+    }
+  };
+
   // Reset transfer and clean WebRTC structures
   const cleanupTransfer = () => {
     if (dataChannelRef.current) {
@@ -492,6 +539,7 @@ export default function Home() {
     }
     receivedChunksRef.current = [];
     receivedBytesRef.current = 0;
+    iceCandidatesQueueRef.current = [];
   };
 
   const resetTransferUI = () => {
@@ -605,6 +653,7 @@ export default function Home() {
     // Set Remote Description and Create Answer
     try {
       await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      await drainIceCandidatesQueue();
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       sendSignal("webrtc-answer", senderId, { sdp: answer });
@@ -1016,14 +1065,14 @@ export default function Home() {
           </h2>
 
           <div className="devices-list">
-            {allDevices.filter(d => d.deviceId !== deviceId).length === 0 ? (
+            {allDevices.filter(d => d.deviceId !== (user?.deviceId || deviceId)).length === 0 ? (
               <div style={{ textAlign: "center", padding: "2rem 0", color: "var(--text-muted)", fontSize: "0.85rem" }}>
                 <LargeDevicesIcon />
                 <div>No other devices registered yet. Log in on your other systems.</div>
               </div>
             ) : (
               allDevices
-                .filter(d => d.deviceId !== deviceId)
+                .filter(d => d.deviceId !== (user?.deviceId || deviceId))
                 .map((dev) => {
                   const isOnline = onlineDevices.some((d) => d.deviceId === dev.deviceId);
                   return (
@@ -1138,6 +1187,13 @@ export default function Home() {
                 {transferState === "REJECTED" && "The request was rejected."}
                 {transferState === "ERROR" && "An error occurred during transfer."}
               </div>
+
+              {/* Progress Percentage */}
+              {(transferState === "TRANSFERRING" || transferState === "SUCCESS") && (
+                <div style={{ fontSize: "2rem", fontWeight: "bold", color: "var(--brand-plum)", margin: "0.5rem 0" }}>
+                  {transferProgress}%
+                </div>
+              )}
 
               {/* Progress Bar */}
               {(transferState === "TRANSFERRING" || transferState === "SUCCESS") && (
