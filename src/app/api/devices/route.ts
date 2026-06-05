@@ -28,9 +28,9 @@ export async function GET() {
 
     await connectToDatabase();
 
-    // Retrieve all devices linked to this email address
-    const devices = await Device.find({ email: decoded.email.toLowerCase() }).select(
-      "deviceId deviceName lastActive -_id"
+    // Retrieve all registered devices in the system
+    const devices = await Device.find({}).select(
+      "deviceId deviceName email lastActive -_id"
     );
 
     return NextResponse.json({ devices }, { status: 200 });

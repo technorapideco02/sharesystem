@@ -1012,9 +1012,14 @@ export default function Home() {
                         <span className="device-icon-wrapper">
                           {dev.deviceName.toLowerCase().includes("iphone") || dev.deviceName.toLowerCase().includes("android") ? <PhoneIcon /> : <ComputerIcon />}
                         </span>
-                        <div style={{ display: "flex", flexDirection: "column" }}>
-                          <span style={{ fontWeight: 600, fontSize: "0.95rem", color: isOnline ? "#2d3748" : "#718096" }}>{dev.deviceName}</span>
-                          <span style={{ fontSize: "0.7rem", color: isOnline ? "var(--success)" : "var(--text-muted)" }}>
+                        <div style={{ display: "flex", flexDirection: "column", maxWidth: "180px", overflow: "hidden" }}>
+                          <span style={{ fontWeight: 600, fontSize: "0.9rem", color: isOnline ? "#2d3748" : "#718096", textOverflow: "ellipsis", whiteSpace: "nowrap", overflow: "hidden" }}>
+                            {dev.deviceName}
+                          </span>
+                          <span style={{ fontSize: "0.7rem", color: "#a0aec0", textOverflow: "ellipsis", whiteSpace: "nowrap", overflow: "hidden" }}>
+                            {dev.email}
+                          </span>
+                          <span style={{ fontSize: "0.65rem", fontWeight: "bold", color: isOnline ? "var(--success)" : "var(--text-muted)", marginTop: "1px" }}>
                             {isOnline ? "Online" : "Offline"}
                           </span>
                         </div>

@@ -57,8 +57,8 @@ wss.on("connection", (socket, req) => {
     },
   });
 
-  // Notify all devices under this email of updated online list
-  broadcastDeviceList(email);
+  // Notify all connected clients of updated online list
+  broadcastDeviceList();
 
   // Handle incoming messages
   socket.on("message", (messageStr) => {
@@ -76,7 +76,7 @@ wss.on("connection", (socket, req) => {
     console.log(`[Signaling] Device disconnected: "${deviceName}" (${email}) [ID: ${deviceId}]`);
     
     // Notify others
-    broadcastDeviceList(email);
+    broadcastDeviceList();
   });
 
   socket.on("error", (err) => {
@@ -84,32 +84,26 @@ wss.on("connection", (socket, req) => {
   });
 });
 
-// Broadcast the list of online devices to everyone registered under this email
-function broadcastDeviceList(email) {
-  const normalizedEmail = email.toLowerCase();
-  
-  // Find all online devices for this email
-  const onlineDevicesForEmail = [];
+// Broadcast the list of all online devices to all connected clients
+function broadcastDeviceList() {
+  const onlineDevices = [];
   clients.forEach((client) => {
-    if (client.email === normalizedEmail) {
-      onlineDevicesForEmail.push({
-        deviceId: client.deviceId,
-        deviceName: client.deviceName,
-        socketId: client.socketId,
-      });
-    }
+    onlineDevices.push({
+      deviceId: client.deviceId,
+      deviceName: client.deviceName,
+      email: client.email,
+      socketId: client.socketId,
+    });
   });
 
-  // Send the list to all sockets under this email
+  // Send the online list to all connected clients
   clients.forEach((client) => {
-    if (client.email === normalizedEmail) {
-      sendToSocket(client.socket, {
-        type: "devices-update",
-        payload: {
-          devices: onlineDevicesForEmail.filter(d => d.deviceId !== client.deviceId), // exclude self
-        },
-      });
-    }
+    sendToSocket(client.socket, {
+      type: "devices-update",
+      payload: {
+        devices: onlineDevices.filter(d => d.deviceId !== client.deviceId), // exclude self
+      },
+    });
   });
 }
 
@@ -141,11 +135,6 @@ function handleMessage(sender, message) {
     return;
   }
 
-  // Security check: ensure sender and recipient have the same email address
-  if (sender.email !== recipient.email) {
-    console.log(`[Signaling] Security alert: ${sender.email} tried to send signaling to device of ${recipient.email}`);
-    return;
-  }
 
   // Relay the message, adding the sender's deviceId and deviceName
   sendToSocket(recipient.socket, {
