@@ -549,7 +549,7 @@ export default function Home() {
     }
   };
 
-  // Reset transfer and clean WebRTC structures
+  // Reset transfer and clean WebRTC structures (without wiping current session candidates queue)
   const cleanupTransfer = () => {
     if (dataChannelRef.current) {
       dataChannelRef.current.close();
@@ -561,11 +561,11 @@ export default function Home() {
     }
     receivedChunksRef.current = [];
     receivedBytesRef.current = 0;
-    iceCandidatesQueueRef.current = [];
   };
 
   const resetTransferUI = () => {
     cleanupTransfer();
+    iceCandidatesQueueRef.current = []; // Safely wipe queue here when transfer completes/fails
     setSelectedFile(null);
     setTransferState("IDLE");
     setTransferProgress(0);
@@ -586,6 +586,7 @@ export default function Home() {
       return;
     }
 
+    iceCandidatesQueueRef.current = []; // Clear queue for new session
     setTransferFileMeta({ name: file.name, size: file.size });
     setTransferDeviceName(device.deviceName);
     setIsIncoming(false);
@@ -602,6 +603,7 @@ export default function Home() {
   // Recipient Accepts Transfer
   const handleAcceptTransfer = () => {
     if (!incomingRequestRef.current) return;
+    iceCandidatesQueueRef.current = []; // Clear queue for new session
     setTransferState("NEGOTIATING");
     // Send acceptance to sender
     sendSignal("transfer-accepted", incomingRequestRef.current.senderDeviceId);
@@ -824,6 +826,7 @@ export default function Home() {
   const handleSendFileClick = () => {
     if (!selectedDevice || !selectedFile) return;
 
+    iceCandidatesQueueRef.current = []; // Clear queue for new session
     setTransferFileMeta({ name: selectedFile.name, size: selectedFile.size });
     setTransferDeviceName(selectedDevice.deviceName);
     setIsIncoming(false);
