@@ -640,9 +640,11 @@ export default function Home() {
   // 5. Render Loading
   if (uiState === "LOADING") {
     return (
-      <div className="auth-wrapper">
-        <div style={{ textAlign: "center" }}>
-          <div className="logo-icon">SS</div>
+      <div className="auth-wrapper" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
+        <div style={{ textAlign: "center", color: "var(--brand-plum)" }}>
+          <div className="brand-circle-logo" style={{ margin: "0 auto 1.5rem" }}>
+            <div className="brand-circle-logo-inner">tbs</div>
+          </div>
           <h2>Loading ShareSphere...</h2>
         </div>
       </div>
@@ -652,101 +654,137 @@ export default function Home() {
   // 6. Render Authentication / Register / OTP
   if (uiState === "AUTH" || uiState === "VERIFY_OTP") {
     return (
-      <div className="auth-wrapper">
-        <div className="auth-card">
-          <div className="auth-header">
-            <div className="logo-icon">SS</div>
-            <h1 className="auth-title">ShareSphere</h1>
-            <p className="auth-subtitle">Direct, serverless P2P file sharing</p>
+      <div className="auth-split-container">
+        {/* Left Panel - Brand info matching the screenshot style */}
+        <div className="auth-left-panel">
+          <div className="brand-top">
+            <div className="brand-circle-logo">
+              <div className="brand-circle-logo-inner">tbs</div>
+            </div>
+            <span className="brand-text">TBS CRM</span>
           </div>
 
-          {errorMsg && (
-            <div style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid var(--danger)", color: "#fca5a5", padding: "0.75rem 1rem", borderRadius: "10px", fontSize: "0.85rem", marginBottom: "1.25rem", textAlign: "center" }}>
-              {errorMsg}
-            </div>
-          )}
+          <div className="brand-center-text">
+            <h1 className="brand-headline">
+              Company <em>CRM</em>
+            </h1>
+            <p className="brand-desc">
+              Access your secure workspace to manage relationships, track opportunities, organize activities, and view business intelligence.
+            </p>
+          </div>
 
-          {uiState === "AUTH" && authMode === "LOGIN" && (
-            <form onSubmit={handleLogin}>
-              <div className="form-group">
-                <label className="form-label">Email Address</label>
-                <input className="form-input" type="email" placeholder="you@domain.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Password</label>
-                <input className="form-input" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Device Name (This Device)</label>
-                <input className="form-input" type="text" placeholder={detectedDeviceName} value={deviceName} onChange={(e) => setDeviceName(e.target.value)} />
-              </div>
-              <button className="btn btn-primary" type="submit" disabled={loading}>
-                {loading ? "Signing In..." : "Sign In"}
-              </button>
-              <div className="auth-footer">
-                Don't have an account?{" "}
-                <a href="#" className="auth-link" onClick={() => { setAuthMode("REGISTER"); setErrorMsg(""); }}>
-                  Create Account
-                </a>
-              </div>
-            </form>
-          )}
+          <div className="brand-footer">
+            © 2026 TBSCRM. Secure Workspace System.
+          </div>
+        </div>
 
-          {uiState === "AUTH" && authMode === "REGISTER" && (
-            <form onSubmit={handleRegister}>
-              <div className="form-group">
-                <label className="form-label">Email Address</label>
-                <input className="form-input" type="email" placeholder="you@domain.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Password</label>
-                <input className="form-input" type="password" placeholder="Min 6 characters" required value={password} onChange={(e) => setPassword(e.target.value)} />
-              </div>
-              <button className="btn btn-primary" type="submit" disabled={loading}>
-                {loading ? "Sending OTP..." : "Register & Send OTP"}
-              </button>
-              <div className="auth-footer">
-                Already have an account?{" "}
-                <a href="#" className="auth-link" onClick={() => { setAuthMode("LOGIN"); setErrorMsg(""); }}>
-                  Sign In
-                </a>
-              </div>
-            </form>
-          )}
+        {/* Right Panel - Auth Card */}
+        <div className="auth-right-panel">
+          <div className="auth-card">
+            <h1 className="auth-title">
+              {uiState === "VERIFY_OTP" ? "Verify OTP" : authMode === "LOGIN" ? "Sign In" : "Sign Up"}
+            </h1>
+            <p className="auth-subtitle">
+              {uiState === "VERIFY_OTP"
+                ? "Enter verification code"
+                : authMode === "LOGIN"
+                ? "Welcome back to your workspace"
+                : "Create your secure sharing account"}
+            </p>
 
-          {uiState === "VERIFY_OTP" && (
-            <form onSubmit={handleVerifyOtp}>
-              <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", marginBottom: "1.25rem", textAlign: "center" }}>
-                We sent a 6-digit OTP to <strong>{email}</strong>. Enter the code below to verify your account and register this device.
-              </p>
-              <div className="form-group">
-                <label className="form-label">OTP Code</label>
-                <input
-                  className="form-input"
-                  style={{ textAlign: "center", fontSize: "1.5rem", letterSpacing: "8px", fontWeight: "bold" }}
-                  type="text"
-                  maxLength={6}
-                  pattern="\d{6}"
-                  placeholder="000000"
-                  required
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                />
+            {errorMsg && (
+              <div style={{ background: "#fff5f5", border: "1px solid #feb2b2", color: "#c53030", padding: "0.75rem 1rem", borderRadius: "8px", fontSize: "0.85rem", marginBottom: "1.25rem", textAlign: "center" }}>
+                {errorMsg}
               </div>
-              <div className="form-group">
-                <label className="form-label">Device Name (This Device)</label>
-                <input className="form-input" type="text" placeholder={detectedDeviceName} value={deviceName} onChange={(e) => setDeviceName(e.target.value)} />
-              </div>
-              <button className="btn btn-primary" type="submit" disabled={loading}>
-                {loading ? "Verifying..." : "Verify & Connect"}
-              </button>
-              <div className="auth-footer">
-                <a href="#" className="auth-link" onClick={() => { setUiState("AUTH"); setErrorMsg(""); }}>
-                  Back to Registration
-                </a>
-              </div>
-            </form>
-          )}
+            )}
+
+            {uiState === "AUTH" && authMode === "LOGIN" && (
+              <form onSubmit={handleLogin}>
+                <div className="form-group">
+                  <label className="form-label">Business Email</label>
+                  <input className="form-input" type="email" placeholder="you@domain.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Password</label>
+                  <input className="form-input" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Device Name (This Device)</label>
+                  <input className="form-input" type="text" placeholder={detectedDeviceName} value={deviceName} onChange={(e) => setDeviceName(e.target.value)} />
+                </div>
+                <button className="btn btn-primary" type="submit" disabled={loading}>
+                  {loading ? "Signing In..." : "Sign In"}
+                </button>
+                <div style={{ textAlign: "center", marginTop: "1rem", fontSize: "0.85rem" }}>
+                  <a href="#" className="auth-link" style={{ color: "#718096" }} onClick={(e) => { e.preventDefault(); showToast("Reset password not configured.", true); }}>
+                    Forgot password?
+                  </a>
+                </div>
+                <div className="auth-footer">
+                  Don't have an account?{" "}
+                  <a href="#" className="auth-link" onClick={(e) => { e.preventDefault(); setAuthMode("REGISTER"); setErrorMsg(""); }}>
+                    Create one
+                  </a>
+                </div>
+              </form>
+            )}
+
+            {uiState === "AUTH" && authMode === "REGISTER" && (
+              <form onSubmit={handleRegister}>
+                <div className="form-group">
+                  <label className="form-label">Business Email</label>
+                  <input className="form-input" type="email" placeholder="you@domain.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Password</label>
+                  <input className="form-input" type="password" placeholder="Min 6 characters" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                </div>
+                <button className="btn btn-primary" type="submit" disabled={loading}>
+                  {loading ? "Sending OTP..." : "Register & Send OTP"}
+                </button>
+                <div className="auth-footer">
+                  Already have an account?{" "}
+                  <a href="#" className="auth-link" onClick={(e) => { e.preventDefault(); setAuthMode("LOGIN"); setErrorMsg(""); }}>
+                    Sign In
+                  </a>
+                </div>
+              </form>
+            )}
+
+            {uiState === "VERIFY_OTP" && (
+              <form onSubmit={handleVerifyOtp}>
+                <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1.25rem", textAlign: "center" }}>
+                  We sent a 6-digit OTP to <strong>{email}</strong>. Enter the code below to verify your account and register this device.
+                </p>
+                <div className="form-group">
+                  <label className="form-label">OTP Code</label>
+                  <input
+                    className="form-input"
+                    style={{ textAlign: "center", fontSize: "1.5rem", letterSpacing: "8px", fontWeight: "bold" }}
+                    type="text"
+                    maxLength={6}
+                    pattern="\d{6}"
+                    placeholder="000000"
+                    required
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Device Name (This Device)</label>
+                  <input className="form-input" type="text" placeholder={detectedDeviceName} value={deviceName} onChange={(e) => setDeviceName(e.target.value)} />
+                </div>
+                <button className="btn btn-primary" type="submit" disabled={loading}>
+                  {loading ? "Verifying..." : "Verify & Connect"}
+                </button>
+                <div className="auth-footer">
+                  <a href="#" className="auth-link" onClick={(e) => { e.preventDefault(); setUiState("AUTH"); setErrorMsg(""); }}>
+                    Back to Sign In
+                  </a>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
 
         {/* Global Toast */}
