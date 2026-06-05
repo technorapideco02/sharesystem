@@ -179,6 +179,27 @@ export default function Home() {
     setToast({ message, isError });
   };
 
+  const [allDevices, setAllDevices] = useState<any[]>([]);
+
+  // Fetch registered devices when dashboard becomes active
+  useEffect(() => {
+    if (uiState === "DASHBOARD") {
+      fetchDevices();
+    }
+  }, [uiState]);
+
+  const fetchDevices = async () => {
+    try {
+      const res = await fetch("/api/devices");
+      if (res.ok) {
+        const data = await res.json();
+        setAllDevices(data.devices);
+      }
+    } catch (err) {
+      console.error("Error fetching devices:", err);
+    }
+  };
+
   // Check Session API
   const checkSession = async () => {
     try {
@@ -358,6 +379,7 @@ export default function Home() {
     switch (type) {
       case "devices-update":
         setOnlineDevices(payload.devices);
+        fetchDevices();
         break;
 
       case "transfer-request":
@@ -450,12 +472,37 @@ export default function Home() {
 
   const resetTransferUI = () => {
     cleanupTransfer();
+    setSelectedFile(null);
     setTransferState("IDLE");
     setTransferProgress(0);
     setTransferFileMeta(null);
     setTransferDeviceName("");
     setIsIncoming(false);
     incomingRequestRef.current = null;
+  };
+
+  // Start file transfer request immediately
+  const startFileTransfer = (file: File, device: any) => {
+    if (!device || !file) return;
+
+    // Check if device is online
+    const isDeviceOnline = onlineDevices.some((d) => d.deviceId === device.deviceId);
+    if (!isDeviceOnline) {
+      showToast(`Cannot transfer: "${device.deviceName}" is offline`, true);
+      return;
+    }
+
+    setTransferFileMeta({ name: file.name, size: file.size });
+    setTransferDeviceName(device.deviceName);
+    setIsIncoming(false);
+    setTransferState("WAITING_APPROVAL");
+
+    // Send transfer request signal via WS
+    sendSignal("transfer-request", device.deviceId, {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+    });
   };
 
   // Recipient Accepts Transfer
@@ -699,13 +746,21 @@ export default function Home() {
     e.stopPropagation();
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      setSelectedFile(e.dataTransfer.files[0]);
+      const file = e.dataTransfer.files[0];
+      setSelectedFile(file);
+      if (selectedDevice) {
+        startFileTransfer(file, selectedDevice);
+      }
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      if (selectedDevice) {
+        startFileTransfer(file, selectedDevice);
+      }
     }
   };
 
@@ -937,30 +992,37 @@ export default function Home() {
           </h2>
 
           <div className="devices-list">
-            {onlineDevices.length === 0 ? (
+            {allDevices.filter(d => d.deviceId !== user?.deviceId).length === 0 ? (
               <div style={{ textAlign: "center", padding: "2rem 0", color: "var(--text-muted)", fontSize: "0.85rem" }}>
                 <LargeDevicesIcon />
-                <div>No other devices online. Log in on your other systems to transfer files.</div>
+                <div>No other devices registered yet. Log in on your other systems.</div>
               </div>
             ) : (
-              onlineDevices.map((dev) => (
-                <div
-                  key={dev.deviceId}
-                  className={`device-item ${selectedDevice?.deviceId === dev.deviceId ? "active-target" : ""}`}
-                  onClick={() => setSelectedDevice(dev)}
-                >
-                  <div className="device-details">
-                    <span className="device-icon-wrapper">
-                      {dev.deviceName.toLowerCase().includes("iphone") || dev.deviceName.toLowerCase().includes("android") ? <PhoneIcon /> : <ComputerIcon />}
-                    </span>
-                    <div style={{ display: "flex", flexDirection: "column" }}>
-                      <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>{dev.deviceName}</span>
-                      <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Online</span>
+              allDevices
+                .filter(d => d.deviceId !== user?.deviceId)
+                .map((dev) => {
+                  const isOnline = onlineDevices.some((d) => d.deviceId === dev.deviceId);
+                  return (
+                    <div
+                      key={dev.deviceId}
+                      className={`device-item ${selectedDevice?.deviceId === dev.deviceId ? "active-target" : ""}`}
+                      onClick={() => setSelectedDevice(dev)}
+                    >
+                      <div className="device-details" style={{ opacity: isOnline ? 1 : 0.6 }}>
+                        <span className="device-icon-wrapper">
+                          {dev.deviceName.toLowerCase().includes("iphone") || dev.deviceName.toLowerCase().includes("android") ? <PhoneIcon /> : <ComputerIcon />}
+                        </span>
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <span style={{ fontWeight: 600, fontSize: "0.95rem", color: isOnline ? "#2d3748" : "#718096" }}>{dev.deviceName}</span>
+                          <span style={{ fontSize: "0.7rem", color: isOnline ? "var(--success)" : "var(--text-muted)" }}>
+                            {isOnline ? "Online" : "Offline"}
+                          </span>
+                        </div>
+                      </div>
+                      <span className={`device-status ${isOnline ? "online" : ""}`}></span>
                     </div>
-                  </div>
-                  <span className="device-status online"></span>
-                </div>
-              ))
+                  );
+                })
             )}
           </div>
         </aside>
@@ -979,23 +1041,13 @@ export default function Home() {
                 Send to <strong>{selectedDevice.deviceName}</strong>
               </h3>
 
-              {selectedFile ? (
-                <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div className="selected-file-card">
-                    <div className="selected-file-info">
-                      <FileIcon />
-                      <div className="file-details" style={{ marginLeft: "0.5rem" }}>
-                        <span className="file-name">{selectedFile.name}</span>
-                        <span className="file-size">{formatBytes(selectedFile.size)}</span>
-                      </div>
-                    </div>
-                    <button className="remove-file-btn" onClick={() => setSelectedFile(null)}>
-                      ✕
-                    </button>
-                  </div>
-                  <button className="btn btn-primary" style={{ maxWidth: "320px" }} onClick={handleSendFileClick}>
-                    Send File P2P
-                  </button>
+              {!onlineDevices.some(d => d.deviceId === selectedDevice.deviceId) ? (
+                <div style={{ textAlign: "center", padding: "2.5rem 1.5rem", color: "var(--text-muted)", border: "2px dashed #cbd5e0", borderRadius: "8px", width: "100%", maxWidth: "500px", background: "#f8f9fa", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
+                  <div style={{ fontSize: "2rem", marginBottom: "0.25rem" }}>😴</div>
+                  <h4 style={{ color: "#4a5568", marginBottom: "0.25rem", fontWeight: "600" }}>Device Offline</h4>
+                  <p style={{ fontSize: "0.8rem", maxWidth: "320px", lineHeight: "1.5" }}>
+                    To send files, please make sure <strong>{selectedDevice.deviceName}</strong> is logged in and online.
+                  </p>
                 </div>
               ) : (
                 <div
