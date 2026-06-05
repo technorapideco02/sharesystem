@@ -320,9 +320,9 @@ export default function Home() {
       setUser(null);
       setToken("");
       setOnlineDevices([]);
+      setAllDevices([]);
       setSelectedDevice(null);
       setSelectedFile(null);
-      if (socketRef.current) socketRef.current.close();
       setUiState("AUTH");
       showToast("Logged out successfully");
     } catch (err) {
@@ -330,58 +330,73 @@ export default function Home() {
     }
   };
 
-  // 2. WebSocket Signaling & WebRTC Setup
+  // 2. Serverless HTTP Polling Signaling & WebRTC Setup
   useEffect(() => {
     if (uiState !== "DASHBOARD" || !token || !user) return;
 
-    // Connect dynamically to the server hosting port 3001
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.hostname;
-    const wsUrl = `${protocol}//${host}:3001?token=${encodeURIComponent(token)}&deviceId=${encodeURIComponent(user.deviceId)}`;
+    let isSubscribed = true;
+    let pollInterval: NodeJS.Timeout;
 
-    console.log("[Client] Connecting to signaling:", wsUrl);
-    const ws = new WebSocket(wsUrl);
-    socketRef.current = ws;
-
-    ws.onopen = () => {
-      console.log("[Client] Connected to signaling server");
-    };
-
-    ws.onmessage = (event) => {
+    const pollSignaling = async () => {
       try {
-        const message = JSON.parse(event.data);
-        handleSignalingMessage(message);
+        const res = await fetch("/api/devices/poll", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            deviceId: user.deviceId,
+            deviceName: user.deviceName,
+            email: user.email,
+          }),
+        });
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            checkSession();
+          }
+          return;
+        }
+
+        const data = await res.json();
+        if (!isSubscribed) return;
+
+        // Update registered devices in sidebar
+        if (data.devices) {
+          setAllDevices(data.devices);
+          // Set active online devices list
+          const activeOnline = data.devices.filter((d: any) => d.isOnline);
+          setOnlineDevices(activeOnline);
+        }
+
+        // Process any received signaling messages
+        if (data.signals && data.signals.length > 0) {
+          for (const sig of data.signals) {
+            console.log("[Client] Processing signal:", sig.type);
+            await handleSignalingMessage(sig);
+          }
+        }
       } catch (err) {
-        console.error("[Client] Error parsing message:", err);
+        console.error("[Client] Polling error:", err);
       }
     };
 
-    ws.onclose = (event) => {
-      console.log("[Client] Signaling server disconnected:", event.reason);
-      // Try to reconnect in 5 seconds if still on Dashboard
-      setTimeout(() => {
-        if (uiState === "DASHBOARD" && (!socketRef.current || socketRef.current.readyState === WebSocket.CLOSED)) {
-          checkSession(); // Validate session and reconnect
-        }
-      }, 5000);
-    };
+    // Initial poll
+    pollSignaling();
+
+    // Poll every 2 seconds
+    pollInterval = setInterval(pollSignaling, 2000);
 
     return () => {
-      ws.close();
+      isSubscribed = false;
+      clearInterval(pollInterval);
       cleanupTransfer();
     };
-  }, [uiState, token]);
+  }, [uiState, token, user]);
 
   // Handle Signaling Packets
   const handleSignalingMessage = async (msg: any) => {
     const { type, senderDeviceId, senderDeviceName, payload } = msg;
 
     switch (type) {
-      case "devices-update":
-        setOnlineDevices(payload.devices);
-        fetchDevices();
-        break;
-
       case "transfer-request":
         console.log("[Client] Incoming transfer request from:", senderDeviceName);
         incomingRequestRef.current = {
@@ -443,14 +458,23 @@ export default function Home() {
     }
   };
 
-  // Helper to send message via WebSocket
-  const sendSignal = (type: string, targetDeviceId: string, payload: any = {}) => {
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      socketRef.current.send(JSON.stringify({
-        type,
-        targetDeviceId,
-        payload,
-      }));
+  // Helper to send message via Serverless Signal API
+  const sendSignal = async (type: string, targetDeviceId: string, payload: any = {}) => {
+    if (!user) return;
+    try {
+      await fetch("/api/devices/signal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          senderDeviceId: user.deviceId,
+          senderDeviceName: user.deviceName,
+          targetDeviceId,
+          type,
+          payload,
+        }),
+      });
+    } catch (err) {
+      console.error("[Client] Error sending signal:", err);
     }
   };
 
@@ -992,14 +1016,14 @@ export default function Home() {
           </h2>
 
           <div className="devices-list">
-            {allDevices.filter(d => d.deviceId !== user?.deviceId).length === 0 ? (
+            {allDevices.filter(d => d.deviceId !== deviceId).length === 0 ? (
               <div style={{ textAlign: "center", padding: "2rem 0", color: "var(--text-muted)", fontSize: "0.85rem" }}>
                 <LargeDevicesIcon />
                 <div>No other devices registered yet. Log in on your other systems.</div>
               </div>
             ) : (
               allDevices
-                .filter(d => d.deviceId !== user?.deviceId)
+                .filter(d => d.deviceId !== deviceId)
                 .map((dev) => {
                   const isOnline = onlineDevices.some((d) => d.deviceId === dev.deviceId);
                   return (

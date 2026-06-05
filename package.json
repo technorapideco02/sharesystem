@@ -3,12 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev:next": "next dev",
-    "dev:ws": "node src/server/signaling.js",
-    "dev": "concurrently --kill-others \"npm run dev:next\" \"npm run dev:ws\"",
+    "dev": "next dev",
     "build": "next build",
-    "start:next": "next start",
-    "start": "concurrently --kill-others \"npm run start:next\" \"npm run dev:ws\"",
+    "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
