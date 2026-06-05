@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ShareSphere | Direct P2P Device File Transfer",
+  title: "Share System for TBS | Technorapide Business Solution",
   description: "Securely transfer files directly between your devices in real-time, peer-to-peer. No server caching, no database storage.",
 };
 

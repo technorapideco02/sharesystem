@@ -19,6 +19,87 @@ type UIState = "LOADING" | "AUTH" | "VERIFY_OTP" | "DASHBOARD";
 type AuthMode = "LOGIN" | "REGISTER";
 type TransferState = "IDLE" | "WAITING_APPROVAL" | "NEGOTIATING" | "TRANSFERRING" | "SUCCESS" | "ERROR" | "REJECTED";
 
+// Inline SVG Icon Helpers (replacing emojis)
+const PhoneIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block" }}>
+    <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+    <line x1="12" y1="18" x2="12.01" y2="18" />
+  </svg>
+);
+
+const ComputerIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block" }}>
+    <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+    <line x1="8" y1="21" x2="16" y2="21" />
+    <line x1="12" y1="17" x2="12" y2="21" />
+  </svg>
+);
+
+const LargeDevicesIcon = () => (
+  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto 0.75rem", color: "#a0aec0" }}>
+    <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+    <line x1="12" y1="18" x2="12.01" y2="18" />
+  </svg>
+);
+
+const PortalPlaceholderIcon = () => (
+  <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="var(--brand-plum-light)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: "1.25rem", opacity: 0.6 }}>
+    <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+    <line x1="8" y1="21" x2="16" y2="21" />
+    <line x1="12" y1="17" x2="12" y2="21" />
+    <circle cx="12" cy="10" r="2" />
+  </svg>
+);
+
+const CloudUploadIcon = () => (
+  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--brand-plum-light)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: "0.75rem" }}>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="17 8 12 3 7 8" />
+    <line x1="12" y1="3" x2="12" y2="15" />
+  </svg>
+);
+
+const FileIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--brand-plum-light)", display: "block" }}>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+  </svg>
+);
+
+const ClockIcon = () => (
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--brand-plum-light)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto 1rem" }}>
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+
+const SyncIcon = () => (
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--brand-plum-light)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto 1rem" }}>
+    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+  </svg>
+);
+
+const LightningIcon = () => (
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--brand-plum-light)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto 1rem" }}>
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto 1rem" }}>
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <polyline points="22 4 12 14.01 9 11.01" />
+  </svg>
+);
+
+const AlertIcon = () => (
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto 1rem" }}>
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
+);
+
 export default function Home() {
   // Client Init
   const [uiState, setUiState] = useState<UIState>("LOADING");
@@ -658,18 +739,31 @@ export default function Home() {
         {/* Left Panel - Brand info matching the screenshot style */}
         <div className="auth-left-panel">
           <div className="brand-top">
-            <div className="brand-circle-logo">
+            <img
+              src="/tbs.png"
+              alt="TBS Logo"
+              width={48}
+              height={48}
+              style={{ borderRadius: "50%", objectFit: "cover" }}
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = "none";
+                const fallback = target.nextSibling as HTMLDivElement;
+                if (fallback) fallback.style.display = "flex";
+              }}
+            />
+            <div className="brand-circle-logo" style={{ display: "none" }}>
               <div className="brand-circle-logo-inner">tbs</div>
             </div>
-            <span className="brand-text">TBS CRM</span>
+            <span className="brand-text" style={{ marginLeft: "0.5rem" }}>Share System for TBS</span>
           </div>
 
           <div className="brand-center-text">
             <h1 className="brand-headline">
-              Company <em>CRM</em>
+              Technorapide <em>Business Solution</em>
             </h1>
             <p className="brand-desc">
-              Access your secure workspace to manage relationships, track opportunities, organize activities, and view business intelligence.
+              Access your secure workspace to transfer files directly across your devices. Direct, P2P, serverless fileshare.
             </p>
           </div>
 
@@ -803,12 +897,25 @@ export default function Home() {
       {/* Header */}
       <header className="dashboard-header">
         <div className="user-badge">
-          <div className="avatar">
+          <img
+            src="/tbs.png"
+            alt="TBS Logo"
+            width={36}
+            height={36}
+            style={{ borderRadius: "50%", objectFit: "cover" }}
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = "none";
+              const fallback = target.nextSibling as HTMLDivElement;
+              if (fallback) fallback.style.display = "flex";
+            }}
+          />
+          <div className="avatar" style={{ display: "none" }}>
             {user?.email?.substring(0, 2).toUpperCase() || "SS"}
           </div>
           <div className="user-info">
             <span className="user-email">{user?.email || ""}</span>
-            <span className="device-name">Current Device: <strong>{user?.deviceName || ""}</strong></span>
+            <span className="device-name">Share System for TBS | Device: <strong>{user?.deviceName || ""}</strong></span>
           </div>
         </div>
         <div>
@@ -831,9 +938,9 @@ export default function Home() {
 
           <div className="devices-list">
             {onlineDevices.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "2rem 0", color: "var(--text-muted)", fontSize: "0.9rem" }}>
-                <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>📱</div>
-                No other devices online. Log in on your other systems to transfer files.
+              <div style={{ textAlign: "center", padding: "2rem 0", color: "var(--text-muted)", fontSize: "0.85rem" }}>
+                <LargeDevicesIcon />
+                <div>No other devices online. Log in on your other systems to transfer files.</div>
               </div>
             ) : (
               onlineDevices.map((dev) => (
@@ -844,7 +951,7 @@ export default function Home() {
                 >
                   <div className="device-details">
                     <span className="device-icon-wrapper">
-                      {dev.deviceName.toLowerCase().includes("iphone") || dev.deviceName.toLowerCase().includes("android") ? "📱" : "💻"}
+                      {dev.deviceName.toLowerCase().includes("iphone") || dev.deviceName.toLowerCase().includes("android") ? <PhoneIcon /> : <ComputerIcon />}
                     </span>
                     <div style={{ display: "flex", flexDirection: "column" }}>
                       <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>{dev.deviceName}</span>
@@ -861,14 +968,14 @@ export default function Home() {
         {/* Right Side: Share Panel */}
         <main className="card share-panel">
           {!selectedDevice ? (
-            <div style={{ textAlign: "center", color: "var(--text-muted)", maxWidth: "320px" }}>
-              <div style={{ fontSize: "4rem", marginBottom: "1rem" }}>🛸</div>
-              <h3 style={{ color: "white", marginBottom: "0.5rem" }}>Select a device</h3>
+            <div style={{ textAlign: "center", color: "var(--text-muted)", maxWidth: "320px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <PortalPlaceholderIcon />
+              <h3 style={{ color: "#2d3748", marginBottom: "0.5rem" }}>Select a device</h3>
               <p style={{ fontSize: "0.9rem" }}>Choose one of your active online devices from the sidebar to begin direct WebRTC file transfer.</p>
             </div>
           ) : (
             <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <h3 style={{ marginBottom: "1.5rem", color: "white" }}>
+              <h3 style={{ marginBottom: "1.5rem", color: "#2d3748" }}>
                 Send to <strong>{selectedDevice.deviceName}</strong>
               </h3>
 
@@ -876,8 +983,8 @@ export default function Home() {
                 <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
                   <div className="selected-file-card">
                     <div className="selected-file-info">
-                      <span className="file-icon">📄</span>
-                      <div className="file-details">
+                      <FileIcon />
+                      <div className="file-details" style={{ marginLeft: "0.5rem" }}>
                         <span className="file-name">{selectedFile.name}</span>
                         <span className="file-size">{formatBytes(selectedFile.size)}</span>
                       </div>
@@ -900,7 +1007,7 @@ export default function Home() {
                   onClick={() => document.getElementById("fileElem")?.click()}
                 >
                   <input type="file" id="fileElem" className="file-input" onChange={handleFileChange} />
-                  <span className="dropzone-icon">📥</span>
+                  <CloudUploadIcon />
                   <span className="dropzone-text">Drag & drop your file here</span>
                   <span className="dropzone-subtext">or click to browse your local device files</span>
                 </div>
@@ -918,12 +1025,12 @@ export default function Home() {
               {isIncoming ? "Incoming File Transfer" : "P2P File Transfer"}
             </h2>
             <div className="modal-body">
-              <div style={{ fontSize: "3rem", margin: "1rem 0" }}>
-                {transferState === "WAITING_APPROVAL" ? "⏳" :
-                 transferState === "NEGOTIATING" ? "🤝" :
-                 transferState === "TRANSFERRING" ? "⚡" :
-                 transferState === "SUCCESS" ? "✅" :
-                 transferState === "REJECTED" ? "❌" : "⚠️"}
+              <div style={{ margin: "1rem auto", display: "flex", justifyContent: "center" }}>
+                {transferState === "WAITING_APPROVAL" ? <ClockIcon /> :
+                 transferState === "NEGOTIATING" ? <SyncIcon /> :
+                 transferState === "TRANSFERRING" ? <LightningIcon /> :
+                 transferState === "SUCCESS" ? <CheckIcon /> :
+                 transferState === "REJECTED" ? <AlertIcon /> : <AlertIcon />}
               </div>
 
               {transferFileMeta && (
