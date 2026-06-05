@@ -343,6 +343,28 @@ export default function Home() {
     }
   };
 
+  // WebRTC negotiation watchdog / timeout
+  useEffect(() => {
+    if (transferState === "NEGOTIATING" || transferState === "WAITING_APPROVAL") {
+      const timer = setTimeout(() => {
+        if (transferState === "NEGOTIATING" || transferState === "WAITING_APPROVAL") {
+          console.warn("[WebRTC] Negotiation/approval timed out");
+          showToast("Connection timed out. Resetting.", true);
+          setTransferState("ERROR");
+          setTimeout(resetTransferUI, 3000);
+        }
+      }, 15000); // 15 seconds timeout
+      return () => clearTimeout(timer);
+    }
+  }, [transferState]);
+
+  // Clean WebRTC structures on unmount
+  useEffect(() => {
+    return () => {
+      cleanupTransfer();
+    };
+  }, []);
+
   // 2. Serverless HTTP Polling Signaling & WebRTC Setup
   useEffect(() => {
     if (uiState !== "DASHBOARD" || !token || !user) return;
@@ -395,15 +417,15 @@ export default function Home() {
     // Initial poll
     pollSignaling();
 
-    // Poll every 2 seconds
-    pollInterval = setInterval(pollSignaling, 2000);
+    // Dynamic poll interval based on transferState: poll faster during transfer negotiation!
+    const intervalTime = transferState !== "IDLE" ? 500 : 2000;
+    pollInterval = setInterval(pollSignaling, intervalTime);
 
     return () => {
       isSubscribed = false;
       clearInterval(pollInterval);
-      cleanupTransfer();
     };
-  }, [uiState, token, user]);
+  }, [uiState, token, user, transferState]);
 
   // Handle Signaling Packets
   const handleSignalingMessage = async (msg: any) => {
@@ -599,7 +621,13 @@ export default function Home() {
     cleanupTransfer();
 
     const pc = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:19302" },
+        { urls: "stun:stun3.l.google.com:19302" },
+        { urls: "stun:stun4.l.google.com:19302" },
+      ],
     });
     peerConnectionRef.current = pc;
 
@@ -632,7 +660,13 @@ export default function Home() {
     cleanupTransfer();
 
     const pc = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:19302" },
+        { urls: "stun:stun3.l.google.com:19302" },
+        { urls: "stun:stun4.l.google.com:19302" },
+      ],
     });
     peerConnectionRef.current = pc;
 

@@ -57,12 +57,13 @@ export async function POST(req: Request) {
       };
     });
 
-    // 4. Retrieve pending signaling messages for this device
-    const pendingSignals = await Signal.find({ targetDeviceId: deviceId });
+    // 4. Retrieve pending signaling messages for this device sorted by creation time
+    const pendingSignals = await Signal.find({ targetDeviceId: deviceId }).sort({ createdAt: 1 });
 
-    // 5. Delete the retrieved signals so they are only processed once
+    // 5. Delete ONLY the retrieved signals to prevent race conditions deleting newly arrived signals
     if (pendingSignals.length > 0) {
-      await Signal.deleteMany({ targetDeviceId: deviceId });
+      const ids = pendingSignals.map((s) => s._id);
+      await Signal.deleteMany({ _id: { $in: ids } });
     }
 
     return NextResponse.json(
