@@ -74,8 +74,9 @@ const ClockIcon = () => (
 );
 
 const SyncIcon = () => (
-  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--brand-plum-light)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto 1rem" }}>
-    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" className="spin-animation" style={{ margin: "0 auto 1rem" }}>
+    <circle cx="12" cy="12" r="10" stroke="rgba(92, 60, 82, 0.12)" strokeWidth="3.5" />
+    <path d="M12 2a10 10 0 0 1 10 10" stroke="var(--brand-plum-light)" strokeWidth="3.5" />
   </svg>
 );
 

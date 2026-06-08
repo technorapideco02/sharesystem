@@ -17,6 +17,14 @@ export async function POST(req: Request) {
       );
     }
 
+    const emailLower = email.toLowerCase().trim();
+    if (!emailLower.endsWith("@technorapide.com") && !emailLower.endsWith("@technorapide.in")) {
+      return NextResponse.json(
+        { error: "Only @technorapide.com and @technorapide.in email domains are allowed." },
+        { status: 400 }
+      );
+    }
+
     await connectToDatabase();
 
     const user = await User.findOne({ email: email.toLowerCase() });

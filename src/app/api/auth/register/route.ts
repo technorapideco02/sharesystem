@@ -15,6 +15,14 @@ export async function POST(req: Request) {
       );
     }
 
+    const emailLower = email.toLowerCase().trim();
+    if (!emailLower.endsWith("@technorapide.com") && !emailLower.endsWith("@technorapide.in")) {
+      return NextResponse.json(
+        { error: "Only @technorapide.com and @technorapide.in email domains are allowed." },
+        { status: 400 }
+      );
+    }
+
     if (password.length < 6) {
       return NextResponse.json(
         { error: "Password must be at least 6 characters long" },
