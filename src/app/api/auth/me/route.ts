@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { connectToDatabase } from "@/lib/db";
 import Device from "@/models/Device";
+import User from "@/models/User";
 
 export async function GET() {
   try {
@@ -27,6 +28,15 @@ export async function GET() {
     }
 
     await connectToDatabase();
+
+    // Verify user exists and check if device session is currently active
+    const user = await User.findOne({ email: decoded.email.toLowerCase() });
+    if (!user || user.currentDeviceId !== decoded.deviceId) {
+      // Clear cookie
+      const cookieStoreMut = await cookies();
+      cookieStoreMut.set("session", "", { maxAge: 0, path: "/" });
+      return NextResponse.json({ authenticated: false, error: "Session invalidated" }, { status: 401 });
+    }
 
     // Refresh device activity timestamp
     await Device.findOneAndUpdate(

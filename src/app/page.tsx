@@ -216,9 +216,14 @@ export default function Home() {
         setToken(data.token);
         setUiState("DASHBOARD");
       } else {
+        setUser(null);
+        setToken("");
         setUiState("AUTH");
+        showToast("Logged out: another device signed in", true);
       }
     } catch (err) {
+      setUser(null);
+      setToken("");
       setUiState("AUTH");
     }
   };
@@ -1059,7 +1064,7 @@ export default function Home() {
 
   // 7. Render Dashboard
   return (
-    <div className="app-container">
+    <div className={`app-container ${selectedDevice ? "has-selected-device" : ""}`}>
       {/* Header */}
       <header className="dashboard-header">
         <div className="user-badge">
@@ -1153,6 +1158,24 @@ export default function Home() {
             </div>
           ) : (
             <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <button
+                className="btn btn-secondary mobile-back-btn"
+                onClick={() => setSelectedDevice(null)}
+                style={{
+                  alignSelf: "flex-start",
+                  marginBottom: "1rem",
+                  width: "auto",
+                  display: "none",
+                  padding: "0.4rem 0.8rem",
+                  fontSize: "0.85rem",
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "0.4rem" }}>
+                  <line x1="19" y1="12" x2="5" y2="12"></line>
+                  <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Back to Devices
+              </button>
               <h3 style={{ marginBottom: "1.5rem", color: "#2d3748" }}>
                 Send to <strong>{selectedDevice.deviceName}</strong>
               </h3>

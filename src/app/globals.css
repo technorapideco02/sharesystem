@@ -662,3 +662,41 @@ html, body {
   animation: spin 1s linear infinite;
   transform-origin: center;
 }
+
+/* Responsive List-Detail Dashboard for Mobile Mode */
+@media (max-width: 767px) {
+  /* When a device is selected, hide the sidebar, show the share panel */
+  .app-container.has-selected-device aside {
+    display: none;
+  }
+  .app-container:not(.has-selected-device) .share-panel {
+    display: none;
+  }
+
+  /* Show the mobile back button on small screens */
+  .mobile-back-btn {
+    display: inline-flex !important;
+  }
+
+  /* Styling headers and panels on mobile */
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .dashboard-header > div:last-child {
+    width: 100%;
+  }
+  .dashboard-header .btn {
+    width: 100%;
+  }
+  .user-badge {
+    width: 100%;
+  }
+  .user-info {
+    max-width: calc(100% - 50px);
+  }
+  .user-email {
+    word-break: break-all;
+  }
+}

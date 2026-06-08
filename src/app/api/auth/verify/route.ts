@@ -60,6 +60,7 @@ export async function POST(req: Request) {
     user.verified = true;
     user.otp = null;
     user.otpExpires = null;
+    user.currentDeviceId = deviceId;
     await user.save();
 
     // Register or update the device by email and deviceName to prevent duplicates

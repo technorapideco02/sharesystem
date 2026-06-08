@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import Device from "@/models/Device";
 import Signal from "@/models/Signal";
+import User from "@/models/User";
 
 export async function POST(req: Request) {
   try {
@@ -12,6 +13,12 @@ export async function POST(req: Request) {
     }
 
     await connectToDatabase();
+
+    // Verify user exists and check if device session is currently active
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user || (user.currentDeviceId && user.currentDeviceId !== deviceId)) {
+      return NextResponse.json({ error: "Session invalidated: another device logged in" }, { status: 401 });
+    }
 
     // 1. Update heartbeat timestamp for this device by email and deviceName to prevent duplicates
     await Device.findOneAndUpdate(

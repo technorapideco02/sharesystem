@@ -25,6 +25,10 @@ const UserSchema = new Schema(
       type: Date,
       default: null,
     },
+    currentDeviceId: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true }
 );

@@ -52,6 +52,9 @@ export async function POST(req: Request) {
       );
     }
 
+    user.currentDeviceId = deviceId;
+    await user.save();
+
     // Register or update device association by email and deviceName to prevent duplicates
     await Device.findOneAndUpdate(
       { email: email.toLowerCase(), deviceName },
